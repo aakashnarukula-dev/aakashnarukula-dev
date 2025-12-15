@@ -34,6 +34,17 @@
 ![Git](https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)
 
+![Claude](https://img.shields.io/badge/Claude-D97757?style=flat-square&logo=anthropic&logoColor=white)
+![GPT](https://img.shields.io/badge/GPT-412991?style=flat-square&logo=openai&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![Vertex AI](https://img.shields.io/badge/Vertex%20AI-4285F4?style=flat-square&logo=googlecloud&logoColor=white)
+![Llama](https://img.shields.io/badge/Llama-0866FF?style=flat-square&logo=meta&logoColor=white)
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=flat-square&logo=langchain&logoColor=white)
+![FLUX.1](https://img.shields.io/badge/FLUX.1-000000?style=flat-square&logo=blackmagicdesign&logoColor=white)
+![ComfyUI](https://img.shields.io/badge/ComfyUI-1A1A1A?style=flat-square&logo=comfy&logoColor=white)
+![Whisper](https://img.shields.io/badge/Whisper-74AA9C?style=flat-square&logo=openai&logoColor=white)
+
 <a href="https://gyftalala.com"><img src="https://img.shields.io/badge/gyftalala.com-000000?style=flat-square&logo=googlechrome&logoColor=white" /></a>
 <img src="https://komarev.com/ghpvc/?username=aakashnarukula-dev&style=flat-square&color=7C3AED&label=profile+views&base=14710" />
 
@@ -46,6 +57,7 @@
 ```ts
 const aakash = {
   role:     "Founder @ Gyftalala",
+  since:    "Feb 2018",
   stack:    ["Full-Stack", "UX Design", "Automation", "AI/LLMs"],
   building: ["AI-powered gifting brand", "voice-first tools", "EV companion apps"],
   shipped:  "10,000+ orders delivered",
@@ -53,6 +65,24 @@ const aakash = {
   motto:    "design it, ship it, automate it.",
 };
 ```
+
+---
+
+## `> ai`
+
+```ts
+const ai = {
+  shipped: [
+    "multi-channel support chatbot — persistent memory keyed to contact, guardrail auto-escalation → WhatsApp handoff",
+    "image-gen pipeline — FLUX.1 + ComfyUI, identity-preserving portraits @ 2048×2048",
+    "voice assistant — on-device + Gemini, OCR extraction & AI categorization",
+  ],
+  doing:   ["prompt engineering", "conversational UX", "RAG / context memory", "LLM agents"],
+  tools:   ["Claude", "GPT", "Gemini", "Vertex AI", "FLUX.1", "ComfyUI", "Whisper"],
+};
+```
+
+🤖 **Building with AI** — conversational agents with memory & guardrails · LLM-driven automation that removes manual ops · generative image pipelines · voice-first interfaces.
 
 ---
 
@@ -103,11 +133,15 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 
 <div align="center">
 
+<img src="https://img.shields.io/badge/Building%20since-Feb%202018-7C3AED?style=for-the-badge&labelColor=0d1117" alt="building since Feb 2018" />
+
+<br/><br/>
+
 <img src="https://github-readme-streak-stats.herokuapp.com?user=aakashnarukula-dev&theme=tokyonight&hide_border=true&background=0d1117&ring=7C3AED&fire=FF6B9D&currStreakLabel=7C3AED" />
 
 <br/><br/>
 
-<img src="https://github-readme-activity-graph.vercel.app/graph?username=aakashnarukula-dev&theme=tokyo-night&bg_color=0d1117&color=7C3AED&line=FF6B9D&point=ffffff&hide_border=true&area=true" />
+<img src="https://ghchart.rshah.org/7C3AED/aakashnarukula-dev" alt="contribution calendar" width="100%" />
 
 </div>
 
