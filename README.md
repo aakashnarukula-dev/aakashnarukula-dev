@@ -148,14 +148,3 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 > **Ship small. Automate the rest.** Most problems shrink when you stop doing them by hand.  
 > Design → build → observe → delete. Repeat.
 
----
-
-<div align="center">
-
-<a href="https://gyftalala.com">
-  <img src="https://img.shields.io/badge/→%20let's%20build%20something-7C3AED?style=for-the-badge&labelColor=0d1117" />
-</a>
-
-<sub>crafted with `coffee` · `vim` · `claude` · too many browser tabs</sub>
-
-</div>
