@@ -1,13 +1,6 @@
 <div align="center">
 
-```
-   _      _   _  __   _   ___ _  _   _  _   _   ___ _   _ _  ___   _ _      _
-  /_\    /_\ | |/ /  /_\ / __| || | | \| | /_\ | _ \ | | | |/ / | | | |    /_\
- / _ \  / _ \| ' <  / _ \\__ \ __ | | .` |/ _ \|   / |_| | ' <| |_| | |__ / _ \
-/_/ \_\/_/ \_\_|\_\/_/ \_\___/_||_| |_|\_/_/ \_\_|_\\___/|_|\_\\___/|____/_/ \_\
-
-                  Founder • Full Stack Developer • UX Designer
-```
+<img src="assets/banner.svg" alt="AAKASH NARUKULA · Founder • Full Stack Developer • UX Designer" width="100%" />
 
 <br/>
 

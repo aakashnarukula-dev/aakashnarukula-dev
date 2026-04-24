@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label="AAKASH NARUKULA">
+  <style>
+    .n { font-family: 'JetBrains Mono','Fira Code','SF Mono','Menlo','Consolas',monospace; font-size: 14px; fill: #E5E7EB; font-weight: 700; }
+    .s { font-family: 'JetBrains Mono','Fira Code','SF Mono','Menlo','Consolas',monospace; font-size: 14px; fill: #9CA3AF; letter-spacing: 2px; }
+  </style>
+  <rect width="100%" height="100%" fill="transparent"/>
+  <g>
+    <text x="500" y="22" text-anchor="middle" class="n" xml:space="preserve"> █████╗  █████╗ ██╗  ██╗ █████╗ ███████╗██╗  ██╗  ███╗   ██╗ █████╗ ██████╗ ██╗   ██╗██╗  ██╗██╗   ██╗██╗      █████╗</text>
+    <text x="500" y="40" text-anchor="middle" class="n" xml:space="preserve">██╔══██╗██╔══██╗██║ ██╔╝██╔══██╗██╔════╝██║  ██║  ████╗  ██║██╔══██╗██╔══██╗██║   ██║██║ ██╔╝██║   ██║██║     ██╔══██╗</text>
+    <text x="500" y="58" text-anchor="middle" class="n" xml:space="preserve">███████║███████║█████╔╝ ███████║███████╗███████║  ██╔██╗ ██║███████║██████╔╝██║   ██║█████╔╝ ██║   ██║██║     ███████║</text>
+    <text x="500" y="76" text-anchor="middle" class="n" xml:space="preserve">██╔══██║██╔══██║██╔═██╗ ██╔══██║╚════██║██╔══██║  ██║╚██╗██║██╔══██║██╔══██╗██║   ██║██╔═██╗ ██║   ██║██║     ██╔══██║</text>
+    <text x="500" y="94" text-anchor="middle" class="n" xml:space="preserve">██║  ██║██║  ██║██║  ██╗██║  ██║███████║██║  ██║  ██║ ╚████║██║  ██║██║  ██║╚██████╔╝██║  ██╗╚██████╔╝███████╗██║  ██║</text>
+    <text x="500" y="112" text-anchor="middle" class="n" xml:space="preserve">╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝  ╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝</text>
+    <text x="500" y="150" text-anchor="middle" class="s">Founder • Full Stack Developer • UX Designer</text>
+  </g>
+</svg>
