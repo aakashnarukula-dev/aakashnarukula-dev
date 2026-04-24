@@ -8,8 +8,6 @@
   <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=22&duration=2800&pause=900&color=7C3AED&center=true&vCenter=true&width=720&lines=Building+AI-powered+products+from+0+%E2%86%92+1;Shipping+automation+pipelines+at+scale;Designing+interfaces+that+feel+effortless;Turning+voice+%26+hardware+into+software" alt="typing"/>
 </a>
 
-<br/><br/>
-
 ### Things I code with
 
 ![React.js](https://img.shields.io/badge/React.js-61DAFB?style=flat-square&logo=react&logoColor=black)
@@ -35,8 +33,6 @@
 ![Prototyping](https://img.shields.io/badge/Prototyping-10B981?style=flat-square&logo=framer&logoColor=white)
 ![Git](https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)
-
-<br/><br/>
 
 <a href="https://gyftalala.com"><img src="https://img.shields.io/badge/gyftalala.com-000000?style=flat-square&logo=googlechrome&logoColor=white" /></a>
 <img src="https://komarev.com/ghpvc/?username=aakashnarukula-dev&style=flat-square&color=7C3AED&label=profile+views" />
