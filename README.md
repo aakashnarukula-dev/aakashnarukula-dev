@@ -4,12 +4,6 @@
 
 <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=18&pause=999999&color=9CA3AF&center=true&vCenter=true&width=700&height=30&lines=Founder+%E2%80%A2+Full+Stack+Developer+%E2%80%A2+UX+Designer" alt="subtitle" />
 
-<a href="https://gyftalala.com">
-  <img src="https://img.shields.io/badge/Founder-Gyftalala-FF6B9D?style=for-the-badge&labelColor=0d1117" />
-</a>
-<img src="https://img.shields.io/badge/AI-Powered%20Gifting-7C3AED?style=for-the-badge&labelColor=0d1117" />
-<img src="https://img.shields.io/badge/10,000%2B-Orders%20Delivered-10B981?style=for-the-badge&labelColor=0d1117" />
-
 <br/>
 
 <a href="https://github.com/aakashnarukula-dev">
@@ -19,11 +13,16 @@
 <br/><br/>
 
 <a href="https://gyftalala.com"><img src="https://img.shields.io/badge/gyftalala.com-000000?style=flat-square&logo=googlechrome&logoColor=white" /></a>
-<a href="mailto:aakashnarukula.dev@gmail.com"><img src="https://img.shields.io/badge/Email-EA4335?style=flat-square&logo=gmail&logoColor=white" /></a>
-<a href="https://github.com/aakashnarukula-dev"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" /></a>
 <img src="https://komarev.com/ghpvc/?username=aakashnarukula-dev&style=flat-square&color=7C3AED&label=profile+views" />
 
 </div>
+
+---
+
+## 😎 Hey! Nice to see you.
+
+Welcome to my page!  
+I'm **Aakash**, Founder & Full-Stack Developer from 🇮🇳 **India**, building **AI-powered products** at [**Gyftalala**](https://gyftalala.com) — shipping automation pipelines & voice-first tools, with **10,000+ orders delivered**.
 
 ---
 
