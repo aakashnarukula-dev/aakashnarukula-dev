@@ -137,7 +137,7 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 
 <br/><br/>
 
-<img src="https://github-profile-trophy.vercel.app/?username=aakashnarukula-dev&theme=tokyonight&no-frame=true&no-bg=true&column=7&margin-w=8" />
+<img src="https://github-profile-trophy.vercel.app/?username=aakashnarukula-dev&theme=tokyonight&no-frame=true&column=7&margin-w=8&margin-h=8" />
 
 <br/><br/>
 
