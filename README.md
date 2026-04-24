@@ -9,6 +9,8 @@
 ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 ```
 
+### Founder • Full Stack Developer • UX Designer
+
 <a href="https://gyftalala.com">
   <img src="https://img.shields.io/badge/Founder-Gyftalala-FF6B9D?style=for-the-badge&labelColor=0d1117" />
 </a>
