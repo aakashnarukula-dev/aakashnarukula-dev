@@ -150,6 +150,15 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 
 ## `> philosophy`
 
-> **Ship small. Automate the rest.** Most problems shrink when you stop doing them by hand.  
-> Design → build → observe → delete. Repeat.
+```diff
++ ship small. automate the rest.
++ most problems shrink when you stop doing them by hand.
++ design → build → observe → delete. repeat.
+- no half-finished implementations.
+- no features without users.
+```
+
+<div align="center">
+<sub><code>// EOF</code></sub>
+</div>
 
