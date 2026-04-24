@@ -1,15 +1,8 @@
 <div align="center">
 
-```
- █████╗  █████╗ ██╗  ██╗ █████╗ ███████╗██╗  ██╗  ███╗   ██╗ █████╗ ██████╗ ██╗   ██╗██╗  ██╗██╗   ██╗██╗      █████╗
-██╔══██╗██╔══██╗██║ ██╔╝██╔══██╗██╔════╝██║  ██║  ████╗  ██║██╔══██╗██╔══██╗██║   ██║██║ ██╔╝██║   ██║██║     ██╔══██╗
-███████║███████║█████╔╝ ███████║███████╗███████║  ██╔██╗ ██║███████║██████╔╝██║   ██║█████╔╝ ██║   ██║██║     ███████║
-██╔══██║██╔══██║██╔═██╗ ██╔══██║╚════██║██╔══██║  ██║╚██╗██║██╔══██║██╔══██╗██║   ██║██╔═██╗ ██║   ██║██║     ██╔══██║
-██║  ██║██║  ██║██║  ██╗██║  ██║███████║██║  ██║  ██║ ╚████║██║  ██║██║  ██║╚██████╔╝██║  ██╗╚██████╔╝███████╗██║  ██║
-╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝  ╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=800&size=56&pause=999999&color=E5E7EB&center=true&vCenter=true&width=900&height=90&lines=AAKASH+NARUKULA" alt="AAKASH NARUKULA" />
 
-                     Founder • Full Stack Developer • UX Designer
-```
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=18&pause=999999&color=9CA3AF&center=true&vCenter=true&width=700&height=30&lines=Founder+%E2%80%A2+Full+Stack+Developer+%E2%80%A2+UX+Designer" alt="subtitle" />
 
 <a href="https://gyftalala.com">
   <img src="https://img.shields.io/badge/Founder-Gyftalala-FF6B9D?style=for-the-badge&labelColor=0d1117" />
