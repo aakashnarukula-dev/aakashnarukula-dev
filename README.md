@@ -41,13 +41,6 @@
 
 ---
 
-## 😎 Hey! Nice to see you.
-
-Welcome to my page!  
-I'm **Aakash**, Founder & Full-Stack Developer from 🇮🇳 **India**, building **AI-powered products** at [**Gyftalala**](https://gyftalala.com) — shipping automation pipelines & voice-first tools, with **10,000+ orders delivered**.
-
----
-
 ## `> whoami`
 
 ```ts
