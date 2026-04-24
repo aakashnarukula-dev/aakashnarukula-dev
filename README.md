@@ -137,10 +137,6 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 
 <br/><br/>
 
-<img src="https://github-profile-trophy.vercel.app/?username=aakashnarukula-dev&theme=tokyonight&no-frame=true&column=7&margin-w=8&margin-h=8" />
-
-<br/><br/>
-
 <img src="https://github-readme-activity-graph.vercel.app/graph?username=aakashnarukula-dev&theme=tokyo-night&bg_color=0d1117&color=7C3AED&line=FF6B9D&point=ffffff&hide_border=true&area=true" />
 
 </div>
