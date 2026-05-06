@@ -103,11 +103,6 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 
 <div align="center">
 
-<img height="165" src="https://github-readme-stats.vercel.app/api?username=aakashnarukula-dev&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0d1117&title_color=7C3AED&icon_color=FF6B9D&text_color=c9d1d9&include_all_commits=true&count_private=true" />
-<img height="165" src="https://github-readme-stats.vercel.app/api/top-langs/?username=aakashnarukula-dev&layout=compact&theme=tokyonight&hide_border=true&bg_color=0d1117&title_color=7C3AED&text_color=c9d1d9&langs_count=8" />
-
-<br/>
-
 <img src="https://github-readme-streak-stats.herokuapp.com?user=aakashnarukula-dev&theme=tokyonight&hide_border=true&background=0d1117&ring=7C3AED&fire=FF6B9D&currStreakLabel=7C3AED" />
 
 <br/><br/>
