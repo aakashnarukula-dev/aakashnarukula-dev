@@ -35,7 +35,7 @@
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)
 
 <a href="https://gyftalala.com"><img src="https://img.shields.io/badge/gyftalala.com-000000?style=flat-square&logo=googlechrome&logoColor=white" /></a>
-<img src="https://komarev.com/ghpvc/?username=aakashnarukula-dev&style=flat-square&color=7C3AED&label=profile+views&base=13926" />
+<img src="https://komarev.com/ghpvc/?username=aakashnarukula-dev&style=flat-square&color=7C3AED&label=profile+views&base=14710" />
 
 </div>
 
