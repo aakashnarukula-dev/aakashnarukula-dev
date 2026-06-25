@@ -154,7 +154,6 @@ Voice-first personal vault. Tasks, alarms, notes, cards & IDs — all by speakin
 + most problems shrink when you stop doing them by hand.
 + design → build → observe → delete. repeat.
 - no half-finished implementations.
-- no features without users.
 ```
 
 <div align="center">
