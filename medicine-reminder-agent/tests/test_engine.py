@@ -367,3 +367,24 @@ async def test_someone_else_answering_is_treated_as_a_miss(harness):
     await engine.record_reply(run_id, 1, reading(intent="wrong_person"), now=now)
 
     assert store.get_run(run_id).status is RunStatus.WAITING_RETRY
+
+
+@pytest.mark.asyncio
+async def test_alert_keeps_quotes_readable_but_escapes_markup(harness):
+    engine, _, _, notifier = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(
+        run_id, 1,
+        reading(intent="refused", summary='Amma said "I don\'t want it" <script>'),
+        now=now,
+    )
+
+    alert = notifier.messages[0]
+    # Telegram decodes &lt; &gt; &amp; but not &#x27;, so quoting speech would
+    # fill the alert with visible entity noise.
+    assert '"I don\'t want it"' in alert
+    assert "&#x27;" not in alert and "&quot;" not in alert
+    # Markup in a transcript still must not reach Telegram as live HTML.
+    assert "&lt;script&gt;" in alert

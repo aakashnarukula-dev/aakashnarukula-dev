@@ -5,7 +5,18 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import datetime, timedelta
-from html import escape
+from html import escape as _escape
+
+
+def escape(text: str) -> str:
+    """Escape for Telegram's HTML parse mode.
+
+    Only ``&``, ``<`` and ``>`` are escaped. Telegram decodes those three
+    entities; it does not decode ``&#x27;``, so the stdlib default of
+    quote=True turns every apostrophe in a quoted reply into visible noise.
+    Nothing here is ever placed in an HTML attribute, so quoting is not needed.
+    """
+    return _escape(text, quote=False)
 
 from .config import Config, Schedule
 from .db import Store
