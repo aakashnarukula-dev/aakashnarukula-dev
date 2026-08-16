@@ -7,7 +7,8 @@ from datetime import timedelta
 import pytest
 
 from app.config import CallSettings
-from app.models import CallOutcome, RunStatus, utcnow
+from app.llm import ReminderReading
+from app.models import CallOutcome, ReplyIntent, RunStatus, utcnow
 
 from .conftest import FakeNotifier, make_config
 
@@ -232,3 +233,137 @@ async def test_run_closes_out_when_telegram_is_switched_off(harness):
     assert run.status is RunStatus.ESCALATED
     assert run.next_action_at is None
     assert notifier.messages == []
+
+
+def reading(**fields) -> ReminderReading:
+    """A model reading with sensible defaults, for driving the engine."""
+    payload = {
+        "intent": "confirmed",
+        "snooze_minutes": 0,
+        "spoken_reply": "Thank you.",
+        "summary": "said yes",
+    }
+    payload.update(fields)
+    return ReminderReading(**payload)
+
+
+SPEECH = make_config(call=CallSettings(confirmation_mode="speech", max_snoozes=1))
+
+
+@pytest.mark.asyncio
+async def test_speaking_a_confirmation_closes_the_reminder(harness):
+    engine, store, provider, notifier = harness(config=make_config(
+        call=CallSettings(confirmation_mode="speech")
+    ))
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    intent = await engine.record_reply(
+        run_id, 1, reading(summary='Amma said "already took it"'), now=now
+    )
+
+    run = store.get_run(run_id)
+    assert intent is ReplyIntent.CONFIRMED
+    assert run.status is RunStatus.ACKNOWLEDGED
+    assert run.next_action_at is None
+    await engine.tick(now + timedelta(seconds=600))
+    assert len(provider.placed) == 1
+    assert notifier.messages == []
+
+
+@pytest.mark.asyncio
+async def test_snooze_calls_back_later_and_restarts_the_ladder(harness):
+    engine, store, provider, notifier = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(
+        run_id, 1, reading(intent="snooze", snooze_minutes=20), now=now
+    )
+
+    run = store.get_run(run_id)
+    assert run.status is RunStatus.WAITING_RETRY
+    assert run.next_action_at == now + timedelta(minutes=20)
+    assert run.snoozes == 1
+
+    # Nothing happens until the snooze elapses.
+    await engine.tick(now + timedelta(minutes=19))
+    assert len(provider.placed) == 1
+
+    later = now + timedelta(minutes=20)
+    await engine.tick(later)
+    assert len(provider.placed) == 2
+
+    # The full two-call ladder runs again from here, rather than escalating
+    # immediately because attempt 2 was already used before the snooze.
+    await engine.record_outcome(run_id, 2, CallOutcome.NO_ANSWER, now=later)
+    assert store.get_run(run_id).status is RunStatus.WAITING_RETRY
+    assert notifier.messages == []
+
+    final = later + timedelta(seconds=300)
+    await engine.tick(final)
+    await engine.record_outcome(run_id, 3, CallOutcome.NO_ANSWER, now=final)
+    assert store.get_run(run_id).status is RunStatus.ESCALATED
+    assert len(provider.placed) == 3
+
+
+@pytest.mark.asyncio
+async def test_a_second_snooze_is_not_granted(harness):
+    engine, store, provider, notifier = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(run_id, 1, reading(intent="snooze", snooze_minutes=10),
+                              now=now)
+    later = now + timedelta(minutes=10)
+    await engine.tick(later)
+
+    # Asking again is treated as a missed call, not another postponement.
+    await engine.record_reply(run_id, 2, reading(intent="snooze", snooze_minutes=10),
+                              now=later)
+
+    run = store.get_run(run_id)
+    assert run.snoozes == 1
+    assert run.status is RunStatus.WAITING_RETRY
+    assert run.next_action_at == later + timedelta(seconds=300)
+
+
+@pytest.mark.asyncio
+async def test_a_refusal_escalates_immediately(harness):
+    engine, store, provider, notifier = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(
+        run_id, 1,
+        reading(intent="refused", summary='Amma said "I do not want it today"'),
+        now=now,
+    )
+
+    assert store.get_run(run_id).status is RunStatus.ESCALATED
+    assert len(provider.placed) == 1, "calling back will not change their mind"
+    assert len(notifier.messages) == 1
+    assert "declined to take it" in notifier.messages[0]
+    assert "I do not want it today" in notifier.messages[0]
+
+
+@pytest.mark.asyncio
+async def test_an_unclear_reply_is_treated_as_a_miss(harness):
+    engine, store, provider, _ = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(run_id, 1, reading(intent="unclear"), now=now)
+
+    assert store.get_run(run_id).status is RunStatus.WAITING_RETRY
+
+
+@pytest.mark.asyncio
+async def test_someone_else_answering_is_treated_as_a_miss(harness):
+    engine, store, _, _ = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(run_id, 1, reading(intent="wrong_person"), now=now)
+
+    assert store.get_run(run_id).status is RunStatus.WAITING_RETRY

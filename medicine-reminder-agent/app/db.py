@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS runs (
     token          TEXT    NOT NULL,
     next_action_at TEXT,
     last_outcome   TEXT,
+    snoozes        INTEGER NOT NULL DEFAULT 0,
+    ladder_base    INTEGER NOT NULL DEFAULT 0,
     created_at     TEXT    NOT NULL,
     updated_at     TEXT    NOT NULL,
     UNIQUE (schedule_id, scheduled_for)
@@ -72,6 +74,8 @@ def _row_to_run(row: sqlite3.Row) -> Run:
         last_outcome=CallOutcome(row["last_outcome"]) if row["last_outcome"] else None,
         created_at=_parse(row["created_at"]),
         updated_at=_parse(row["updated_at"]),
+        snoozes=row["snoozes"],
+        ladder_base=row["ladder_base"],
     )
 
 
@@ -89,7 +93,21 @@ class Store:
         self._conn.execute("PRAGMA foreign_keys=ON")
         with self._lock:
             self._conn.executescript(SCHEMA)
+            self._migrate()
             self._conn.commit()
+
+    def _migrate(self) -> None:
+        """Add columns introduced after a database was first created."""
+        existing = {
+            row["name"] for row in self._conn.execute("PRAGMA table_info(runs)")
+        }
+        for column, ddl in (
+            ("snoozes", "ALTER TABLE runs ADD COLUMN snoozes INTEGER NOT NULL DEFAULT 0"),
+            ("ladder_base",
+             "ALTER TABLE runs ADD COLUMN ladder_base INTEGER NOT NULL DEFAULT 0"),
+        ):
+            if column not in existing:
+                self._conn.execute(ddl)
 
     def close(self) -> None:
         with self._lock:
@@ -149,6 +167,8 @@ class Store:
         next_action_at: datetime | None = None,
         clear_next_action: bool = False,
         last_outcome: CallOutcome | None = None,
+        snoozes: int | None = None,
+        ladder_base: int | None = None,
     ) -> None:
         sets: list[str] = ["updated_at = ?"]
         params: list[object] = [_iso(now)]
@@ -166,6 +186,12 @@ class Store:
         if last_outcome is not None:
             sets.append("last_outcome = ?")
             params.append(last_outcome.value)
+        if snoozes is not None:
+            sets.append("snoozes = ?")
+            params.append(snoozes)
+        if ladder_base is not None:
+            sets.append("ladder_base = ?")
+            params.append(ladder_base)
         params.append(run_id)
 
         with self._lock:

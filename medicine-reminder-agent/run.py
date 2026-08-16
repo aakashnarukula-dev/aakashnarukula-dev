@@ -36,6 +36,17 @@ def cmd_check(args: argparse.Namespace) -> int:
     print(f"confirmation mode   : {config.call.confirmation_mode}")
     print(f"attempts / retry    : {config.call.max_attempts} calls, "
           f"{config.call.retry_delay_seconds}s apart")
+    if not config.llm.enabled:
+        reply_reader = "off (keyword matching)"
+    elif not config.llm.api_key:
+        reply_reader = (
+            f"{config.llm.provider}/{config.llm.model} "
+            f"— NO API KEY SET, will use keyword matching"
+        )
+    else:
+        reply_reader = f"{config.llm.provider}/{config.llm.model}"
+    print(f"reply model         : {reply_reader}")
+    print(f"snoozes allowed     : {config.call.max_snoozes}")
     print(f"telegram alerts     : {'on' if config.telegram.enabled else 'off'}")
     print(f"public base url     : {config.provider.public_base_url or '(none — polling mode)'}")
     print(f"database            : {config.database_path}")

@@ -15,6 +15,7 @@ from fastapi import FastAPI, Form, HTTPException, Query, Request, Response
 from .config import Config, load_config
 from .db import Store
 from .engine import ReminderEngine
+from .llm import ReminderLLM, build_llm
 from .models import Run, RunStatus
 from .notifier import TelegramNotifier
 from .scheduler import ReminderScheduler
@@ -33,6 +34,7 @@ class Services:
     store: Store
     engine: ReminderEngine
     notifier: TelegramNotifier
+    llm: ReminderLLM
     scheduler: ReminderScheduler | None = None
 
 
@@ -41,8 +43,11 @@ def build_services(config: Config | None = None) -> Services:
     store = Store(config.database_path)
     provider = build_provider(config)
     notifier = TelegramNotifier(config.telegram)
-    engine = ReminderEngine(config, store, provider, notifier)
-    return Services(config=config, store=store, engine=engine, notifier=notifier)
+    llm = build_llm(config.llm)
+    engine = ReminderEngine(config, store, provider, notifier, llm)
+    return Services(
+        config=config, store=store, engine=engine, notifier=notifier, llm=llm
+    )
 
 
 def _services(request: Request) -> Services:
@@ -98,6 +103,7 @@ async def lifespan(app: FastAPI):
         if services.scheduler is not None:
             services.scheduler.shutdown()
         await services.notifier.aclose()
+        await services.llm.aclose()
         await services.engine.provider.aclose()
         services.store.close()
 
@@ -143,23 +149,25 @@ def create_app(services: Services | None = None, run_scheduler: bool = True) -> 
                 media_type=XML,
             )
 
+        call = services.config.call
         action_url = None
-        confirm_digit = None
-        if services.config.call.confirmation_mode == "dtmf":
+        if call.confirmation_mode in {"speech", "dtmf"}:
             query = urlencode({"run_id": run_id, "attempt": attempt, "token": token})
             action_url = (
                 f"{services.config.provider.public_base_url}/voice/gather?{query}"
             )
-            confirm_digit = services.config.call.confirm_digit
 
         return Response(
             content=reminder_twiml(
                 message=schedule.message,
                 voice=recipient.voice,
                 language=recipient.language,
-                confirm_digit=confirm_digit,
-                gather_timeout=services.config.call.gather_timeout_seconds,
+                mode=call.confirmation_mode,
+                confirm_digit=call.confirm_digit,
+                gather_timeout=call.gather_timeout_seconds,
+                speech_timeout=call.speech_timeout,
                 action_url=action_url,
+                confirm_prompt=recipient.confirm_prompt,
             ),
             media_type=XML,
         )
@@ -171,19 +179,29 @@ def create_app(services: Services | None = None, run_scheduler: bool = True) -> 
         attempt: int = Query(...),
         token: str = Query(...),
         Digits: str = Form(default=""),
+        SpeechResult: str = Form(default=""),
     ) -> Response:
-        """Where the keypress lands — this is what proves someone heard the reminder."""
+        """Where the reply lands — this is what proves someone heard the reminder."""
         services = _services(request)
         form = dict(await request.form())
         await _verify_twilio_signature(request, form)
         run = _authorised_run(services, run_id, token)
         recipient = services.config.recipient(run.recipient_id)
+        schedule = services.config.schedule(run.schedule_id)
 
+        # The keypress is unambiguous and needs no model — take it first.
         if Digits.strip() == services.config.call.confirm_digit:
             await services.engine.record_acknowledgement(run_id, attempt)
             spoken = THANK_YOU_LINE
+        elif SpeechResult.strip():
+            log.info("run %s attempt %s heard: %r", run_id, attempt, SpeechResult)
+            reading = await services.llm.read_reply(
+                recipient=recipient, schedule=schedule, transcript=SpeechResult
+            )
+            await services.engine.record_reply(run_id, attempt, reading)
+            spoken = reading.spoken_reply
         else:
-            # No key (or the wrong one): the status callback will trigger the retry.
+            # Nothing said, nothing pressed: the status callback drives the retry.
             spoken = NO_RESPONSE_LINE
 
         return Response(
@@ -220,6 +238,7 @@ def create_app(services: Services | None = None, run_scheduler: bool = True) -> 
             "timezone": str(services.config.timezone),
             "provider": services.config.provider.name,
             "confirmation_mode": services.config.call.confirmation_mode,
+            "reply_reader": services.llm.describe,
             "next_runs": (
                 services.scheduler.next_run_times() if services.scheduler else {}
             ),

@@ -29,6 +29,11 @@ class Recipient:
     phone: str
     voice: str = "Polly.Joanna"
     language: str = "en-US"
+    #: Spoken after the reminder to invite a reply. Override it to ask in the
+    #: recipient's own language — an English question after a Hindi reminder is
+    #: exactly the moment an elderly listener gets confused and hangs up.
+    #: "{digit}" is substituted with the confirmation key.
+    confirm_prompt: str = ""
 
 
 @dataclass(frozen=True)
@@ -52,6 +57,53 @@ class CallSettings:
     gather_timeout_seconds: int = 8
     # Safety net: if no webhook ever resolves a call, give up on it after this long.
     stale_call_seconds: int = 180
+    # "Call me back in 20 minutes" — honoured this many times per dose before
+    # the reminder falls back to the normal retry-then-escalate ladder.
+    max_snoozes: int = 1
+    speech_timeout: str = "auto"  # Twilio end-of-speech detection
+
+
+
+#: base URL, default model, and the env vars each vendor conventionally uses.
+PROVIDER_PRESETS: dict[str, tuple[str, str, tuple[str, ...]]] = {
+    "gemini": (
+        "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "gemini-2.5-flash-lite",
+        ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    ),
+    "openai": ("https://api.openai.com/v1", "gpt-4.1-nano", ("OPENAI_API_KEY",)),
+    "groq": (
+        "https://api.groq.com/openai/v1",
+        "llama-3.3-70b-versatile",
+        ("GROQ_API_KEY",),
+    ),
+    "xai": ("https://api.x.ai/v1", "grok-4.1-fast", ("XAI_API_KEY",)),
+    "deepseek": ("https://api.deepseek.com/v1", "deepseek-chat", ("DEEPSEEK_API_KEY",)),
+    "mistral": (
+        "https://api.mistral.ai/v1",
+        "mistral-small-latest",
+        ("MISTRAL_API_KEY",),
+    ),
+    "anthropic": ("", "claude-haiku-4-5", ("ANTHROPIC_API_KEY",)),
+    "custom": ("", "", ()),
+}
+
+
+@dataclass(frozen=True)
+class LLMSettings:
+    """Which model understands spoken replies, and how patient we are with it."""
+
+    enabled: bool = True
+    provider: str = "gemini"
+    model: str = ""
+    base_url: str = ""
+    api_key: str = ""
+    # A person is holding a phone: give up and fall back rather than make
+    # them wait. Two providers' worth of retry already fits inside this.
+    timeout_seconds: float = 8.0
+    max_tokens: int = 300
+    default_snooze_minutes: int = 15
+    max_snooze_minutes: int = 60
 
 
 @dataclass(frozen=True)
@@ -78,6 +130,7 @@ class Config:
     timezone: ZoneInfo
     call: CallSettings
     telegram: TelegramSettings
+    llm: LLMSettings
     provider: ProviderSettings
     recipients: dict[str, Recipient]
     schedules: list[Schedule] = field(default_factory=list)
@@ -175,6 +228,7 @@ def _load_recipients(raw_list: Any) -> dict[str, Recipient]:
             phone=phone,
             voice=str(raw.get("voice") or "Polly.Joanna"),
             language=str(raw.get("language") or "en-US"),
+            confirm_prompt=str(raw.get("confirm_prompt") or "").strip(),
         )
     return recipients
 
@@ -220,8 +274,10 @@ def _load_schedules(raw_list: Any, recipients: dict[str, Recipient]) -> list[Sch
 def _load_call_settings(raw: dict[str, Any]) -> CallSettings:
     defaults = CallSettings()
     mode = str(raw.get("confirmation_mode") or defaults.confirmation_mode).lower()
-    if mode not in {"dtmf", "answered"}:
-        raise ConfigError("call.confirmation_mode must be 'dtmf' or 'answered'")
+    if mode not in {"speech", "dtmf", "answered"}:
+        raise ConfigError(
+            "call.confirmation_mode must be 'speech', 'dtmf' or 'answered'"
+        )
 
     digit = str(raw.get("confirm_digit") or defaults.confirm_digit)
     if len(digit) != 1 or digit not in "0123456789*#":
@@ -247,6 +303,58 @@ def _load_call_settings(raw: dict[str, Any]) -> CallSettings:
             raw.get("gather_timeout_seconds", defaults.gather_timeout_seconds)
         ),
         stale_call_seconds=int(raw.get("stale_call_seconds", defaults.stale_call_seconds)),
+        max_snoozes=max(0, int(raw.get("max_snoozes", defaults.max_snoozes))),
+        speech_timeout=str(raw.get("speech_timeout") or defaults.speech_timeout),
+    )
+
+
+def _load_llm_settings(raw: dict[str, Any]) -> LLMSettings:
+    defaults = LLMSettings()
+    enabled = _as_bool(raw.get("enabled"), defaults.enabled)
+
+    provider = str(
+        raw.get("provider") or os.environ.get("LLM_PROVIDER") or defaults.provider
+    ).strip().lower()
+    if provider not in PROVIDER_PRESETS:
+        raise ConfigError(
+            f"unknown llm.provider '{provider}'; choose one of "
+            f"{sorted(PROVIDER_PRESETS)}"
+        )
+    preset_url, preset_model, key_vars = PROVIDER_PRESETS[provider]
+
+    # An explicit LLM_API_KEY always wins, so one variable works for any vendor.
+    api_key = os.environ.get("LLM_API_KEY", "").strip()
+    for var in key_vars:
+        if api_key:
+            break
+        api_key = os.environ.get(var, "").strip()
+
+    model = str(raw.get("model") or os.environ.get("LLM_MODEL") or preset_model).strip()
+    base_url = str(
+        raw.get("base_url") or os.environ.get("LLM_BASE_URL") or preset_url
+    ).strip()
+
+    if enabled and provider == "custom" and not base_url:
+        raise ConfigError("llm.provider 'custom' needs llm.base_url (or LLM_BASE_URL)")
+    if enabled and not model:
+        raise ConfigError(f"llm.provider '{provider}' needs llm.model (or LLM_MODEL)")
+
+    return LLMSettings(
+        enabled=enabled,
+        provider=provider,
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        timeout_seconds=float(
+            raw.get("timeout_seconds", defaults.timeout_seconds)
+        ),
+        max_tokens=int(raw.get("max_tokens", defaults.max_tokens)),
+        default_snooze_minutes=int(
+            raw.get("default_snooze_minutes", defaults.default_snooze_minutes)
+        ),
+        max_snooze_minutes=int(
+            raw.get("max_snooze_minutes", defaults.max_snooze_minutes)
+        ),
     )
 
 
@@ -273,6 +381,7 @@ def load_config(path: str | Path | None = None) -> Config:
     recipients = _load_recipients(raw.get("recipients"))
     schedules = _load_schedules(raw.get("schedules"), recipients)
     call = _load_call_settings(raw.get("call") or {})
+    llm = _load_llm_settings(raw.get("llm") or {})
 
     raw_telegram = raw.get("telegram") or {}
     telegram = TelegramSettings(
@@ -316,17 +425,18 @@ def load_config(path: str | Path | None = None) -> Config:
         ]
         if missing:
             raise ConfigError(f"missing environment variables: {', '.join(missing)}")
-    if call.confirmation_mode == "dtmf" and not provider.public_base_url:
+    if call.confirmation_mode in {"speech", "dtmf"} and not provider.public_base_url:
         raise ConfigError(
-            "call.confirmation_mode: dtmf needs PUBLIC_BASE_URL so the phone keypad "
-            "reply can reach this app. Expose it (ngrok/cloudflared/a server) or use "
-            "confirmation_mode: answered"
+            f"call.confirmation_mode: {call.confirmation_mode} needs PUBLIC_BASE_URL "
+            "so the reply can reach this app. Expose it (ngrok/cloudflared/a server) "
+            "or use confirmation_mode: answered"
         )
 
     return Config(
         timezone=tz,
         call=call,
         telegram=telegram,
+        llm=llm,
         provider=provider,
         recipients=recipients,
         schedules=schedules,

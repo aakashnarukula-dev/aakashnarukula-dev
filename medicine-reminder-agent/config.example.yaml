@@ -7,13 +7,28 @@ call:
   max_attempts: 2            # first call + one retry
   retry_delay_seconds: 300   # retry 5 minutes after a missed call
   ring_timeout_seconds: 30   # how long to let the phone ring
-  # dtmf     -> they must press a key for the reminder to count as answered
-  #             (needs PUBLIC_BASE_URL so the keypress can reach this app)
+  # speech   -> they answer in their own words and a model reads what they
+  #             meant; the keypad still works as a fallback (needs PUBLIC_BASE_URL)
+  # dtmf     -> a keypress is required (needs PUBLIC_BASE_URL)
   # answered -> simply picking up counts (works with no public URL)
-  confirmation_mode: dtmf
+  confirmation_mode: speech
   confirm_digit: "1"
-  gather_timeout_seconds: 8  # how long to wait for the keypress after the message
+  gather_timeout_seconds: 8  # how long to wait for a reply after the message
+  speech_timeout: auto       # Twilio end-of-speech detection
+  max_snoozes: 1             # honour "call me back in 20 minutes" this many times
   stale_call_seconds: 180    # if no webhook resolves a call by then, poll the provider
+
+# Which model reads the spoken replies. Any of these providers works; see the
+# README for the cost and latency comparison behind this default.
+#   gemini | openai | groq | xai | deepseek | mistral | anthropic | custom
+llm:
+  enabled: true
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  timeout_seconds: 8         # someone is holding a phone: fall back, don't stall
+  max_tokens: 300
+  default_snooze_minutes: 15 # used when they say "later" without saying how long
+  max_snooze_minutes: 60
 
 telegram:
   enabled: true
@@ -29,6 +44,9 @@ recipients:
     phone: ${MOM_PHONE}        # E.164, e.g. +919876543210
     language: en-IN
     voice: Polly.Aditi         # Twilio TTS voice
+    # Asked after the reminder. Write it in the language they actually speak;
+    # "{digit}" becomes the confirmation key.
+    confirm_prompt: "Aapne dawai le li? Aap mujhe bata sakti hain, ya {digit} dabaiye."
 
   - id: dad
     name: Nanna

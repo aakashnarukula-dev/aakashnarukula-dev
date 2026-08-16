@@ -39,6 +39,16 @@ class CallOutcome(str, Enum):
 ANSWERED_OUTCOMES = {CallOutcome.ANSWERED_HUMAN}
 
 
+class ReplyIntent(str, Enum):
+    """What the person meant when they answered the reminder."""
+
+    CONFIRMED = "confirmed"        # took it, or taking it right now
+    SNOOZE = "snooze"              # will take it shortly — call back
+    REFUSED = "refused"            # declining outright — tell the family now
+    WRONG_PERSON = "wrong_person"  # someone else answered
+    UNCLEAR = "unclear"            # nothing usable was heard
+
+
 @dataclass(frozen=True)
 class CallRequest:
     """Everything a telephony provider needs to dial one reminder."""
@@ -72,3 +82,8 @@ class Run:
     last_outcome: CallOutcome | None
     created_at: datetime
     updated_at: datetime
+    #: How many "call me back later" requests have been honoured for this dose.
+    snoozes: int = 0
+    #: Attempt number the current retry ladder started from. A snooze moves it
+    #: forward so the ladder restarts without erasing earlier call history.
+    ladder_base: int = 0

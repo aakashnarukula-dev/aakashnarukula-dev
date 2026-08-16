@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import pytest
 
+import json
+
 from app.config import (
     CallSettings,
     Config,
+    LLMSettings,
     ProviderSettings,
     Recipient,
     Schedule,
@@ -12,6 +15,7 @@ from app.config import (
 )
 from app.db import Store
 from app.engine import ReminderEngine
+from app.llm import ReminderLLM
 from app.models import CallOutcome
 from app.telephony.console_provider import ConsoleProvider
 from zoneinfo import ZoneInfo
@@ -33,6 +37,38 @@ class FakeNotifier:
         return None
 
 
+class ScriptedReader:
+    """A model backend that returns whatever the test scripted for it."""
+
+    name = "test:scripted"
+
+    def __init__(self, response: str | None = None) -> None:
+        self.response = response
+        self.prompts: list[str] = []
+
+    def script(self, **fields) -> None:
+        """Queue a well-formed reading, filling in sensible defaults."""
+        payload = {
+            "intent": "confirmed",
+            "snooze_minutes": 0,
+            "spoken_reply": "Thank you.",
+            "summary": "said yes",
+        }
+        payload.update(fields)
+        self.response = json.dumps(payload)
+
+    async def read(self, prompt: str) -> str | None:
+        self.prompts.append(prompt)
+        return self.response
+
+    async def aclose(self) -> None:
+        return None
+
+
+def make_llm(reader: ScriptedReader | None = None) -> ReminderLLM:
+    return ReminderLLM(LLMSettings(enabled=True, api_key="test"), reader)
+
+
 def make_config(**overrides) -> Config:
     call = overrides.pop("call", CallSettings(retry_delay_seconds=300, max_attempts=2))
     provider = overrides.pop(
@@ -49,6 +85,7 @@ def make_config(**overrides) -> Config:
     return Config(
         timezone=ZoneInfo("Asia/Kolkata"),
         call=call,
+        llm=overrides.pop("llm", LLMSettings(enabled=False)),
         telegram=TelegramSettings(enabled=True, bot_token="t", chat_id="c",
                                   **overrides.pop("telegram", {})),
         provider=provider,
@@ -63,7 +100,7 @@ def make_config(**overrides) -> Config:
 def harness():
     """Engine wired to an in-memory store, a simulated phone line and a fake bot."""
 
-    def _build(outcome=None, config=None, notifier=None):
+    def _build(outcome=None, config=None, notifier=None, reader=None):
         config = config or make_config()
         store = Store(":memory:")
         # Default: calls stay 'live' so each test drives outcomes explicitly.
@@ -71,7 +108,8 @@ def harness():
             outcome=outcome or CallOutcome.IN_PROGRESS, ring_seconds=0
         )
         notifier = notifier or FakeNotifier()
-        engine = ReminderEngine(config, store, provider, notifier)
+        llm = make_llm(reader)
+        engine = ReminderEngine(config, store, provider, notifier, llm)
         return engine, store, provider, notifier
 
     return _build

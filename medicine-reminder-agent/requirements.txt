@@ -3,6 +3,13 @@ uvicorn[standard]==0.34.0
 apscheduler==3.11.0
 twilio==9.4.1
 httpx==0.28.1
+pydantic==2.10.5
 PyYAML==6.0.2
 python-dotenv==1.0.1
 python-multipart==0.0.20
+
+# Reply understanding. `openai` speaks to OpenAI, Gemini, Groq, xAI,
+# DeepSeek and Mistral via their OpenAI-compatible endpoints; `anthropic`
+# is only needed if you point llm.provider at Claude.
+openai==1.109.1
+anthropic==0.122.0

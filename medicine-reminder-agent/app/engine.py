@@ -9,10 +9,12 @@ from html import escape
 
 from .config import Config, Schedule
 from .db import Store
+from .llm import ReminderLLM, ReminderReading
 from .models import (
     TERMINAL_STATUSES,
     CallOutcome,
     CallRequest,
+    ReplyIntent,
     Run,
     RunStatus,
     utcnow,
@@ -49,11 +51,13 @@ class ReminderEngine:
         store: Store,
         provider: TelephonyProvider,
         notifier: TelegramNotifier,
+        llm: ReminderLLM | None = None,
     ) -> None:
         self.config = config
         self.store = store
         self.provider = provider
         self.notifier = notifier
+        self.llm = llm
 
     # ------------------------------------------------------------ triggering
 
@@ -90,7 +94,7 @@ class ReminderEngine:
         run = self.store.get_run(run_id)
         if run is None or run.status in TERMINAL_STATUSES:
             return
-        if attempt_no > self.config.call.max_attempts:
+        if attempt_no - run.ladder_base > self.config.call.max_attempts:
             await self._escalate(run, now=now)
             return
 
@@ -167,6 +171,73 @@ class ReminderEngine:
             await self.notifier.send(self._acknowledged_message(run, now))
         return True
 
+    async def record_reply(
+        self,
+        run_id: int,
+        attempt_no: int,
+        reading: ReminderReading,
+        *,
+        now: datetime | None = None,
+    ) -> ReplyIntent:
+        """Act on what the person said. Returns the intent that was applied."""
+        now = now or utcnow()
+        intent = reading.as_intent()
+        run = self.store.get_run(run_id)
+        if run is None or run.status in TERMINAL_STATUSES:
+            return intent
+
+        if intent is ReplyIntent.CONFIRMED:
+            await self.record_acknowledgement(
+                run_id, attempt_no, source=reading.summary, now=now
+            )
+            return intent
+
+        if intent is ReplyIntent.SNOOZE and run.snoozes < self.config.call.max_snoozes:
+            self.store.finish_attempt(
+                run_id, attempt_no, CallOutcome.ANSWERED_HUMAN, now,
+                detail=reading.summary,
+            )
+            retry_at = now + timedelta(minutes=reading.snooze_minutes)
+            self.store.update_run(
+                run_id,
+                now=now,
+                status=RunStatus.WAITING_RETRY,
+                next_action_at=retry_at,
+                last_outcome=CallOutcome.ANSWERED_HUMAN,
+                snoozes=run.snoozes + 1,
+                # Restart the retry ladder from here, keeping earlier history.
+                ladder_base=attempt_no,
+            )
+            log.info(
+                "run %s: snoozed %s minutes (%s of %s)",
+                run_id, reading.snooze_minutes, run.snoozes + 1,
+                self.config.call.max_snoozes,
+            )
+            return intent
+
+        if intent is ReplyIntent.REFUSED:
+            # Calling back in five minutes will not change their mind — the
+            # useful action is telling whoever is looking after them, now.
+            self.store.finish_attempt(
+                run_id, attempt_no, CallOutcome.ANSWERED_HUMAN, now,
+                detail=reading.summary,
+            )
+            self.store.update_run(
+                run_id, now=now, last_outcome=CallOutcome.ANSWERED_HUMAN
+            )
+            refreshed = self.store.get_run(run_id)
+            if refreshed is not None:
+                await self._escalate(refreshed, now=now, reason="declined to take it")
+            return intent
+
+        # wrong_person, unclear, or a snooze we have already granted once:
+        # treat it as a missed call and let the normal ladder run.
+        await self.record_outcome(
+            run_id, attempt_no, CallOutcome.ANSWERED_HUMAN,
+            detail=reading.summary, now=now,
+        )
+        return intent
+
     async def record_outcome(
         self,
         run_id: int,
@@ -206,7 +277,7 @@ class ReminderEngine:
         log.info(
             "run %s attempt %s: %s", run_id, attempt_no, OUTCOME_LABELS.get(outcome, outcome)
         )
-        if attempt_no < self.config.call.max_attempts:
+        if attempt_no - run.ladder_base < self.config.call.max_attempts:
             retry_at = now + timedelta(seconds=self.config.call.retry_delay_seconds)
             self.store.update_run(
                 run_id,
@@ -225,7 +296,9 @@ class ReminderEngine:
 
     # ------------------------------------------------------------ escalation
 
-    async def _escalate(self, run: Run, *, now: datetime | None = None) -> None:
+    async def _escalate(
+        self, run: Run, *, now: datetime | None = None, reason: str | None = None
+    ) -> None:
         now = now or utcnow()
         if not self.notifier.enabled:
             # Alerts are switched off on purpose — close the run out rather than
@@ -238,7 +311,7 @@ class ReminderEngine:
             )
             return
 
-        sent = await self.notifier.send(self._escalation_message(run, now))
+        sent = await self.notifier.send(self._escalation_message(run, now, reason))
         if sent:
             self.store.update_run(
                 run.id, now=now, status=RunStatus.ESCALATED, clear_next_action=True
@@ -314,7 +387,9 @@ class ReminderEngine:
     def _local(self, moment: datetime) -> str:
         return moment.astimezone(self.config.timezone).strftime("%d %b %Y, %I:%M %p")
 
-    def _escalation_message(self, run: Run, now: datetime) -> str:
+    def _escalation_message(
+        self, run: Run, now: datetime, reason: str | None = None
+    ) -> str:
         schedule = self.config.schedule(run.schedule_id)
         recipient = self.config.recipient(run.recipient_id)
         attempts = self.store.attempts_for(run.id)
@@ -323,17 +398,39 @@ class ReminderEngine:
             for row in attempts
         ) or "none"
 
-        return (
-            "🔴 <b>Missed medicine reminder</b>\n\n"
-            f"<b>{escape(recipient.name)}</b> ({escape(recipient.phone)}) did not "
-            f"respond after {len(attempts)} call(s).\n\n"
-            f"💊 <b>Reminder:</b> {escape(schedule.id)}\n"
-            f"🗣 <b>Message:</b> {escape(schedule.message)}\n"
-            f"🕒 <b>Due at:</b> {escape(self._local(run.scheduled_for))}\n"
-            f"📞 <b>Attempts:</b> {escape(tried)}\n"
-            f"⏱ <b>Last try:</b> {escape(self._local(now))}\n\n"
-            "Please check on them."
+        # The most recent thing they actually said, if anything was heard.
+        heard = next(
+            (
+                row["detail"]
+                for row in reversed(attempts)
+                if row["detail"] and row["outcome"] == CallOutcome.ANSWERED_HUMAN.value
+            ),
+            None,
         )
+
+        headline = (
+            f"<b>{escape(recipient.name)}</b> ({escape(recipient.phone)}) "
+            + (
+                f"{escape(reason)}."
+                if reason
+                else f"did not respond after {len(attempts)} call(s)."
+            )
+        )
+        lines = [
+            "🔴 <b>Missed medicine reminder</b>\n",
+            headline + "\n",
+            f"💊 <b>Reminder:</b> {escape(schedule.id)}",
+            f"🗣 <b>Message:</b> {escape(schedule.message)}",
+            f"🕒 <b>Due at:</b> {escape(self._local(run.scheduled_for))}",
+            f"📞 <b>Attempts:</b> {escape(tried)}",
+        ]
+        if heard:
+            lines.append(f"💬 <b>Heard:</b> {escape(heard)}")
+        if run.snoozes:
+            lines.append(f"⏳ <b>Postponed:</b> {run.snoozes} time(s) at their request")
+        lines.append(f"⏱ <b>Last try:</b> {escape(self._local(now))}")
+        lines.append("\nPlease check on them.")
+        return "\n".join(lines)
 
     def _acknowledged_message(self, run: Run, now: datetime) -> str:
         recipient = self.config.recipient(run.recipient_id)
