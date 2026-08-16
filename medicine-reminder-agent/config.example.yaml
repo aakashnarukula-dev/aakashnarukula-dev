@@ -1,0 +1,57 @@
+# Copy to config.yaml and edit. Secrets live in .env, not here.
+# ${VAR} placeholders are filled in from the environment at load time.
+
+timezone: Asia/Kolkata
+
+call:
+  max_attempts: 2            # first call + one retry
+  retry_delay_seconds: 300   # retry 5 minutes after a missed call
+  ring_timeout_seconds: 30   # how long to let the phone ring
+  # dtmf     -> they must press a key for the reminder to count as answered
+  #             (needs PUBLIC_BASE_URL so the keypress can reach this app)
+  # answered -> simply picking up counts (works with no public URL)
+  confirmation_mode: dtmf
+  confirm_digit: "1"
+  gather_timeout_seconds: 8  # how long to wait for the keypress after the message
+  stale_call_seconds: 180    # if no webhook resolves a call by then, poll the provider
+
+telegram:
+  enabled: true
+  bot_token: ${TELEGRAM_BOT_TOKEN}
+  chat_id: ${TELEGRAM_CHAT_ID}
+  notify_on_acknowledged: false   # set true to also get a ping when they confirm
+
+database_path: data/reminders.db
+
+recipients:
+  - id: mom
+    name: Amma
+    phone: ${MOM_PHONE}        # E.164, e.g. +919876543210
+    language: en-IN
+    voice: Polly.Aditi         # Twilio TTS voice
+
+  - id: dad
+    name: Nanna
+    phone: ${DAD_PHONE}
+    language: en-IN
+    voice: Polly.Raveena
+
+schedules:
+  - id: morning
+    recipient: mom
+    at: "08:00"
+    message: >-
+      Good morning Amma. This is your medicine reminder.
+      Please take your morning tablets with breakfast.
+
+  - id: afternoon
+    recipient: mom
+    at: "14:00"
+    days: [mon, tue, wed, thu, fri]
+    message: Amma, it is time for your afternoon tablet. Please take it after lunch.
+
+  - id: night
+    recipient: dad
+    cron: "30 21 * * *"     # 9:30 PM daily — raw crontab, if you prefer
+    message: Nanna, please take your night medicines before going to sleep.
+    enabled: true
