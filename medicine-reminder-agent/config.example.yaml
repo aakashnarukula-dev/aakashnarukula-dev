@@ -42,34 +42,48 @@ recipients:
   - id: mom
     name: Amma
     phone: ${MOM_PHONE}        # E.164, e.g. +919876543210
-    language: en-IN
-    voice: Polly.Aditi         # Twilio TTS voice
-    # Asked after the reminder. Write it in the language they actually speak;
-    # "{digit}" becomes the confirmation key.
-    confirm_prompt: "Aapne dawai le li? Aap mujhe bata sakti hain, ya {digit} dabaiye."
+    language: te-IN
+    # Amazon Polly has no Telugu voice — only Hindi and Indian English. Telugu
+    # comes from Google's voices instead. Standard is cheapest; swap in
+    # Google.te-IN-Chirp3-HD-Kore for a noticeably more natural read.
+    voice: Google.te-IN-Standard-Female
+    # Everything the call says besides the reminder. The voice pronounces
+    # whatever text it is handed, so leaving these in English would have a
+    # Telugu voice reading English aloud.
+    phrases:
+      confirm_prompt: "మీరు మాత్ర వేసుకున్నారా? చెప్పండి, లేదా {digit} నొక్కండి."
+      thanks: "ధన్యవాదాలు. జాగ్రత్తగా ఉండండి."
+      no_reply: "సమాధానం రాలేదు. కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
+      snooze_ack: "సరే, కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
+      refused_ack: "సరే. నేను ఇంట్లో వాళ్ళకి చెప్తాను."
+      unclear_ack: "క్షమించండి, వినిపించలేదు. మళ్ళీ ఫోన్ చేస్తాను."
 
   - id: dad
     name: Nanna
     phone: ${DAD_PHONE}
-    language: en-IN
-    voice: Polly.Raveena
+    language: te-IN
+    voice: Google.te-IN-Standard-Male
+    phrases:
+      confirm_prompt: "మీరు మాత్ర వేసుకున్నారా? చెప్పండి, లేదా {digit} నొక్కండి."
+      thanks: "ధన్యవాదాలు. జాగ్రత్తగా ఉండండి."
+      no_reply: "సమాధానం రాలేదు. కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
+      snooze_ack: "సరే, కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
+      refused_ack: "సరే. నేను ఇంట్లో వాళ్ళకి చెప్తాను."
+      unclear_ack: "క్షమించండి, వినిపించలేదు. మళ్ళీ ఫోన్ చేస్తాను."
 
 schedules:
   - id: morning
     recipient: mom
     at: "08:00"
-    message: >-
-      Good morning Amma. This is your medicine reminder.
-      Please take your morning tablets with breakfast.
+    message: "నమస్కారం అమ్మా. మీ ఉదయం మాత్రలు టిఫిన్ తర్వాత వేసుకోండి."
 
   - id: afternoon
     recipient: mom
     at: "14:00"
     days: [mon, tue, wed, thu, fri]
-    message: Amma, it is time for your afternoon tablet. Please take it after lunch.
+    message: "అమ్మా, మధ్యాహ్నం మాత్ర వేసుకునే సమయం అయ్యింది. భోజనం తర్వాత వేసుకోండి."
 
   - id: night
     recipient: dad
-    cron: "30 21 * * *"     # 9:30 PM daily — raw crontab, if you prefer
-    message: Nanna, please take your night medicines before going to sleep.
-    enabled: true
+    cron: "30 21 * * *"        # 9:30 PM daily — raw crontab, if you prefer
+    message: "నాన్నా, పడుకునే ముందు రాత్రి మందులు వేసుకోండి."

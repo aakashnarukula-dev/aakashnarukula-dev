@@ -21,7 +21,7 @@ from .notifier import TelegramNotifier
 from .scheduler import ReminderScheduler
 from .telephony import build_provider, map_call_status
 from .telephony.base import MACHINE_ANSWERS
-from .voice import NO_RESPONSE_LINE, THANK_YOU_LINE, closing_twiml, reminder_twiml
+from .voice import DEFAULT_PHRASES, closing_twiml, reminder_twiml
 
 log = logging.getLogger(__name__)
 
@@ -167,7 +167,7 @@ def create_app(services: Services | None = None, run_scheduler: bool = True) -> 
                 gather_timeout=call.gather_timeout_seconds,
                 speech_timeout=call.speech_timeout,
                 action_url=action_url,
-                confirm_prompt=recipient.confirm_prompt,
+                phrases=recipient.phrases,
             ),
             media_type=XML,
         )
@@ -192,7 +192,7 @@ def create_app(services: Services | None = None, run_scheduler: bool = True) -> 
         # The keypress is unambiguous and needs no model — take it first.
         if Digits.strip() == services.config.call.confirm_digit:
             await services.engine.record_acknowledgement(run_id, attempt)
-            spoken = THANK_YOU_LINE
+            spoken = recipient.phrase("thanks", DEFAULT_PHRASES["thanks"])
         elif SpeechResult.strip():
             log.info("run %s attempt %s heard: %r", run_id, attempt, SpeechResult)
             reading = await services.llm.read_reply(
@@ -202,7 +202,7 @@ def create_app(services: Services | None = None, run_scheduler: bool = True) -> 
             spoken = reading.spoken_reply
         else:
             # Nothing said, nothing pressed: the status callback drives the retry.
-            spoken = NO_RESPONSE_LINE
+            spoken = recipient.phrase("no_reply", DEFAULT_PHRASES["no_reply"])
 
         return Response(
             content=closing_twiml(spoken, recipient.voice, recipient.language),

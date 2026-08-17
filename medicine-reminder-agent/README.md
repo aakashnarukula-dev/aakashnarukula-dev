@@ -220,29 +220,44 @@ recipients:
   - id: mom
     name: Amma
     phone: ${MOM_PHONE}      # E.164, e.g. +919876543210
-    language: hi-IN
-    voice: Polly.Aditi
-    # Ask the follow-up question in the language they actually speak.
-    confirm_prompt: "Aapne dawai le li? Bata dijiye, ya {digit} dabaiye."
+    language: te-IN
+    voice: Google.te-IN-Standard-Female
+    # Everything the call says apart from the reminder itself.
+    phrases:
+      confirm_prompt: "మీరు మాత్ర వేసుకున్నారా? చెప్పండి, లేదా {digit} నొక్కండి."
+      thanks: "ధన్యవాదాలు. జాగ్రత్తగా ఉండండి."
+      no_reply: "సమాధానం రాలేదు. కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
+      snooze_ack: "సరే, కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
+      refused_ack: "సరే. నేను ఇంట్లో వాళ్ళకి చెప్తాను."
+      unclear_ack: "క్షమించండి, వినిపించలేదు. మళ్ళీ ఫోన్ చేస్తాను."
 
 schedules:
   - id: morning
     recipient: mom
     at: "08:00"              # local time, in the timezone above
     days: [mon, tue, wed, thu, fri, sat, sun]   # optional, defaults to daily
-    message: Namaste Amma, apni subah ki dawai le lijiye.
-
-  - id: night
-    recipient: mom
-    cron: "30 21 * * *"      # raw crontab, if you prefer
-    message: Raat ki dawai lene ka samay ho gaya hai.
+    message: "నమస్కారం అమ్మా. మీ ఉదయం మాత్రలు టిఫిన్ తర్వాత వేసుకోండి."
 ```
 
-Voices for Indian English and Hindi: `Polly.Aditi`, `Polly.Raveena`,
-`Polly.Kajal-Neural`. Set `language` to match (`en-IN`, `hi-IN`, `te-IN`, …) — it
-drives both the speech recogniser and the voice.
+**Picking a voice — this is where Indian languages bite.** Twilio's `<Say>` offers
+both Amazon Polly and Google voices, and **Polly has no Telugu** (nor Tamil,
+Kannada, Malayalam, Bengali, Marathi, Gujarati or Punjabi — only Hindi and Indian
+English). Those languages come from Google's voices instead:
 
-**Write `confirm_prompt` in their language.** The reminder being in Hindi while the
+| Language | Voice |
+| --- | --- |
+| Telugu | `Google.te-IN-Standard-Female` / `-Male`, or `Google.te-IN-Chirp3-HD-Kore` for a far more natural read |
+| Tamil | `Google.ta-IN-Standard-Female` / `-Male` |
+| Kannada | `Google.kn-IN-Standard-Female` / `-Male` |
+| Hindi | `Polly.Aditi`, `Polly.Kajal-Neural`, or `Google.hi-IN-*` |
+| Indian English | `Polly.Aditi`, `Polly.Raveena`, `Polly.Kajal-Neural` |
+
+`language` drives the speech recogniser; `voice` drives what they hear. Keep them
+on the same locale.
+
+**Fill in `phrases` in their language.** A voice pronounces whatever text it is
+given — leave these English and a Telugu voice will read English aloud, which is
+worse than either language on its own. The reminder being in Telugu while the
 follow-up question is in English is exactly the moment an elderly listener gets
 confused and hangs up.
 

@@ -66,7 +66,7 @@ async def test_snooze_is_capped_and_never_zero():
 
 @pytest.mark.asyncio
 async def test_unreachable_model_falls_back_to_keywords():
-    reading = await read(ScriptedReader(response=None), "haan le liya")
+    reading = await read(ScriptedReader(response=None), "అవును వేసుకున్నాను")
 
     assert reading.as_intent() is ReplyIntent.CONFIRMED
     assert reading.spoken_reply  # the call still has something to say
@@ -74,7 +74,7 @@ async def test_unreachable_model_falls_back_to_keywords():
 
 @pytest.mark.asyncio
 async def test_unparseable_response_falls_back_to_keywords():
-    reading = await read(ScriptedReader("I'm afraid I can't do that"), "no not taking")
+    reading = await read(ScriptedReader("I'm afraid I can't do that"), "వద్దు")
 
     assert reading.as_intent() is ReplyIntent.REFUSED
 
@@ -96,7 +96,7 @@ async def test_works_with_no_model_configured():
     assert not llm.enabled
 
     reading = await llm.read_reply(
-        recipient=RECIPIENT, schedule=SCHEDULE, transcript="yes took it"
+        recipient=RECIPIENT, schedule=SCHEDULE, transcript="అవును"
     )
     assert reading.as_intent() is ReplyIntent.CONFIRMED
 
@@ -104,9 +104,14 @@ async def test_works_with_no_model_configured():
 @pytest.mark.parametrize(
     ("transcript", "expected"),
     [
-        ("haan le liya", ReplyIntent.CONFIRMED),
+        # Twilio returns Telugu script for te-IN, so both forms must classify.
+        ("అవును వేసుకున్నాను", ReplyIntent.CONFIRMED),
+        ("avunu teesukunnanu", ReplyIntent.CONFIRMED),
+        ("సరే", ReplyIntent.CONFIRMED),
         ("yes done", ReplyIntent.CONFIRMED),
-        ("nahi", ReplyIntent.REFUSED),
+        ("లేదు", ReplyIntent.REFUSED),
+        ("ledu vaddu", ReplyIntent.REFUSED),
+        ("తిన్నాక వేసుకుంటాను", ReplyIntent.SNOOZE),
         ("I'll take it after lunch", ReplyIntent.SNOOZE),
         ("zzzz krrk", ReplyIntent.UNCLEAR),
         ("", ReplyIntent.UNCLEAR),

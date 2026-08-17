@@ -29,11 +29,15 @@ class Recipient:
     phone: str
     voice: str = "Polly.Joanna"
     language: str = "en-US"
-    #: Spoken after the reminder to invite a reply. Override it to ask in the
-    #: recipient's own language — an English question after a Hindi reminder is
-    #: exactly the moment an elderly listener gets confused and hangs up.
-    #: "{digit}" is substituted with the confirmation key.
-    confirm_prompt: str = ""
+    #: Every sentence the call speaks that isn't the reminder itself. Override
+    #: these in the recipient's own language — the voice pronounces whatever
+    #: text it is given, so English defaults read by a Telugu voice come out as
+    #: nonsense. Keys: confirm_prompt, thanks, no_reply, snooze_ack,
+    #: refused_ack, unclear_ack. "{digit}" is substituted with the confirm key.
+    phrases: dict[str, str] = field(default_factory=dict)
+
+    def phrase(self, key: str, default: str) -> str:
+        return self.phrases.get(key) or default
 
 
 @dataclass(frozen=True)
@@ -228,7 +232,11 @@ def _load_recipients(raw_list: Any) -> dict[str, Recipient]:
             phone=phone,
             voice=str(raw.get("voice") or "Polly.Joanna"),
             language=str(raw.get("language") or "en-US"),
-            confirm_prompt=str(raw.get("confirm_prompt") or "").strip(),
+            phrases={
+                str(k): str(v)
+                for k, v in (raw.get("phrases") or {}).items()
+                if str(v).strip()
+            },
         )
     return recipients
 

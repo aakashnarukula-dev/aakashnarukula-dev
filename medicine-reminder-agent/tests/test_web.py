@@ -232,13 +232,15 @@ async def test_the_follow_up_question_can_be_asked_in_their_language(speech_clie
     # An English question after a Hindi reminder is where people hang up.
     engine.config.recipients["mom"] = replace(
         engine.config.recipient("mom"),
-        language="hi-IN",
-        confirm_prompt="Aapne dawai le li? Bata dijiye, ya {digit} dabaiye.",
+        language="te-IN",
+        voice="Google.te-IN-Standard-Female",
+        phrases={"confirm_prompt": "మీరు మాత్ర వేసుకున్నారా? చెప్పండి, లేదా {digit} నొక్కండి."},
     )
     run_id, token = await _start_run(engine)
 
     body = client.post("/voice/answer", params=_params(run_id, token), data={}).text
 
-    assert "Aapne dawai le li?" in body
-    assert "1 dabaiye" in body
+    assert "మీరు మాత్ర వేసుకున్నారా?" in body
+    assert "1 నొక్కండి" in body
     assert "Have you taken it?" not in body
+    assert 'voice="Google.te-IN-Standard-Female"' in body

@@ -4,19 +4,30 @@ from __future__ import annotations
 
 from xml.sax.saxutils import escape, quoteattr
 
-CONFIRM_PROMPT = "Press {digit} to confirm you have taken your medicine."
-SPEECH_PROMPT = (
-    "Have you taken it? You can just answer me, or press {digit} to confirm."
-)
-NO_RESPONSE_LINE = "We did not get a response. We will call you again shortly. Goodbye."
-THANK_YOU_LINE = "Thank you. Take care. Goodbye."
+#: Every line the call can speak besides the reminder itself. These are
+#: English fallbacks — set `phrases:` on the recipient to say them in their
+#: own language. A voice pronounces whatever text it is handed, so a Telugu
+#: voice reading these English defaults is worse than useless.
+DEFAULT_PHRASES = {
+    "confirm_prompt": (
+        "Have you taken it? You can just answer me, or press {digit} to confirm."
+    ),
+    "dtmf_prompt": "Press {digit} to confirm you have taken your medicine.",
+    "thanks": "Thank you. Take care. Goodbye.",
+    "no_reply": "We did not get a response. We will call you again shortly. Goodbye.",
+    "snooze_ack": "Alright, I will call you again shortly.",
+    "refused_ack": "Alright. I will let the family know.",
+    "unclear_ack": "Sorry, I did not catch that. We will call again shortly.",
+}
 
 #: Nudges the speech recogniser toward the words that actually decide the call.
 #: Twilio weights these, which matters most for accented and non-English yes/no.
+#: Telugu first, English second — elderly speakers code-switch constantly.
 DEFAULT_SPEECH_HINTS = (
-    "yes,no,yeah,okay,already,taken,took it,done,not yet,later,"
-    "after lunch,after dinner,in ten minutes,haan,nahi,ho gaya,le liya,"
-    "kha liya,baad mein,thodi der"
+    "అవును,సరే,వేసుకున్నాను,తీసుకున్నాను,అయ్యింది,అయిపోయింది,"
+    "లేదు,వద్దు,తర్వాత,తిన్నాక,కొంచెం సేపు,"
+    "avunu,sare,vesukunnanu,teesukunnanu,ayyindi,ledu,vaddu,tarvata,tinnaka,"
+    "yes,no,okay,taken,took it,done,not yet,later,after lunch,after dinner"
 )
 
 
@@ -38,7 +49,7 @@ def reminder_twiml(
     speech_timeout: str = "auto",
     action_url: str | None = None,
     speech_hints: str = DEFAULT_SPEECH_HINTS,
-    confirm_prompt: str = "",
+    phrases: dict[str, str] | None = None,
 ) -> str:
     """Build the reminder call script.
 
@@ -48,20 +59,19 @@ def reminder_twiml(
     so a recogniser failure never strands the call.
     """
     spoken = message.strip()
+    say_phrase = lambda key: (phrases or {}).get(key) or DEFAULT_PHRASES[key]
 
     if mode == "answered" or not action_url:
         body = [
             _say(spoken, voice, language),
             '<Pause length="1"/>',
             _say(spoken, voice, language),
-            _say(THANK_YOU_LINE, voice, language),
+            _say(say_phrase("thanks"), voice, language),
         ]
         return f'<?xml version="1.0" encoding="UTF-8"?><Response>{"".join(body)}</Response>'
 
     listening_for_speech = mode == "speech"
-    template = confirm_prompt or (
-        SPEECH_PROMPT if listening_for_speech else CONFIRM_PROMPT
-    )
+    template = say_phrase("confirm_prompt" if listening_for_speech else "dtmf_prompt")
     prompt = template.format(digit=confirm_digit)
     inner = "".join(
         [
@@ -89,7 +99,7 @@ def reminder_twiml(
         f"<Gather {' '.join(attrs)}>{inner}</Gather>",
         # Reached only if <Gather> collected nothing and the action URL was
         # unreachable — otherwise the action URL owns the goodbye.
-        _say(NO_RESPONSE_LINE, voice, language),
+        _say(say_phrase("no_reply"), voice, language),
     ]
     return f'<?xml version="1.0" encoding="UTF-8"?><Response>{"".join(body)}</Response>'
 

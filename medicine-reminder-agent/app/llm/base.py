@@ -37,27 +37,34 @@ summary: one short English line for the family member's alert, quoting what \
 they actually said.
 
 Speech-to-text is unreliable on elderly voices and on Indian languages, and it \
-returns no punctuation. If the transcript is anywhere close to a yes — "haan", \
-"ha", "ok", "took it", "le liya", "done" — read it as confirmed. Reserve \
-unclear for transcripts with genuinely nothing to go on."""
+returns no punctuation. Transcripts may come back in the local script, in \
+romanised form, or code-switched with English mid-sentence. If it is anywhere \
+close to a yes — "అవును", "సరే", "వేసుకున్నాను", "avunu", "sare", "took it", \
+"done", "ok" — read it as confirmed. Reserve unclear for transcripts with \
+genuinely nothing to go on."""
 
 #: Words that carry a decision on their own, used when no model is reachable.
+# Telugu script has no word boundaries the way \b expects, so script forms are
+# matched as plain alternatives and only the romanised/English forms use \b.
 _FALLBACK_PATTERNS: list[tuple[re.Pattern[str], ReplyIntent]] = [
-    (re.compile(r"\b(no|nahi|nahin|not|won'?t|refuse|don'?t want)\b", re.I),
-     ReplyIntent.REFUSED),
-    (re.compile(r"\b(later|baad|after|minute|minutes|shortly|soon)\b", re.I),
-     ReplyIntent.SNOOZE),
-    (re.compile(r"\b(yes|yeah|yep|ok|okay|haan|han|ha|took|taken|done|"
-                r"le liya|liya|khaya|finished)\b", re.I),
-     ReplyIntent.CONFIRMED),
+    (re.compile(r"లేదు|వద్దు|వొద్దు|\b(no|ledu|vaddu|not|won'?t|refuse|don'?t want)\b",
+                re.I), ReplyIntent.REFUSED),
+    (re.compile(r"తర్వాత|తరువాత|తిన్నాక|కొంచెం|సేపు|"
+                r"\b(later|after|tarvata|tarwata|tinnaka|konchem|minute|minutes|"
+                r"shortly|soon)\b", re.I), ReplyIntent.SNOOZE),
+    (re.compile(r"అవును|సరే|వేసుకున్న|తీసుకున్న|అయ్యింది|అయిపోయింది|"
+                r"\b(yes|yeah|yep|ok|okay|avunu|sare|vesukunna|vesukunnanu|"
+                r"teesukunna|teesukunnanu|ayyindi|aipoyindi|took|taken|done|"
+                r"finished)\b", re.I), ReplyIntent.CONFIRMED),
 ]
 
-_FALLBACK_REPLIES = {
-    ReplyIntent.CONFIRMED: "Thank you. Take care.",
-    ReplyIntent.SNOOZE: "Alright, I will call you again shortly.",
-    ReplyIntent.REFUSED: "Alright. I will let the family know.",
-    ReplyIntent.WRONG_PERSON: "Sorry to trouble you. Goodbye.",
-    ReplyIntent.UNCLEAR: "Sorry, I did not catch that. We will call again shortly.",
+#: Which recipient phrase answers each intent when no model is reachable.
+_FALLBACK_PHRASE_KEYS = {
+    ReplyIntent.CONFIRMED: "thanks",
+    ReplyIntent.SNOOZE: "snooze_ack",
+    ReplyIntent.REFUSED: "refused_ack",
+    ReplyIntent.WRONG_PERSON: "unclear_ack",
+    ReplyIntent.UNCLEAR: "unclear_ack",
 }
 
 
@@ -89,10 +96,14 @@ def keyword_reading(transcript: str, recipient: Recipient) -> ReminderReading:
             intent = candidate
             break
 
+    from ..voice import DEFAULT_PHRASES
+
+    key = _FALLBACK_PHRASE_KEYS[intent]
     return ReminderReading(
         intent=intent.value,
         snooze_minutes=15 if intent is ReplyIntent.SNOOZE else 0,
-        spoken_reply=_FALLBACK_REPLIES[intent],
+        # Spoken aloud, so it must be in their language even with no model.
+        spoken_reply=recipient.phrase(key, DEFAULT_PHRASES[key]),
         summary=f"{recipient.name} said: \"{text or '(nothing heard)'}\"",
     )
 
