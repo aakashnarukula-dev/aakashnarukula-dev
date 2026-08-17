@@ -241,8 +241,25 @@ class ReminderEngine:
                 await self._escalate(refreshed, now=now, reason="declined to take it")
             return intent
 
-        # wrong_person, unclear, or a snooze we have already granted once:
-        # treat it as a missed call and let the normal ladder run.
+        # They spoke, but nothing usable came back. This branch is only ever
+        # reached when speech was actually detected — silence never gets here —
+        # so on a recipient who cannot press a key, insisting on a clean
+        # transcript would flag doses they took and did confirm out loud.
+        if (
+            intent is ReplyIntent.UNCLEAR
+            and self.config.call.unclear_speech_counts_as == "confirmed"
+        ):
+            log.info(
+                "run %s: transcript unusable, but they answered and spoke — "
+                "counting it", run_id,
+            )
+            await self.record_acknowledgement(
+                run_id, attempt_no, source=reading.summary, now=now
+            )
+            return intent
+
+        # wrong_person, a snooze already granted once, or an unclear reply when
+        # a clean transcript is required: a missed call, run the normal ladder.
         await self.record_outcome(
             run_id, attempt_no, CallOutcome.ANSWERED_HUMAN,
             detail=reading.summary, now=now,

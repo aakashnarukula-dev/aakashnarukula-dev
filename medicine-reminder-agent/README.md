@@ -297,13 +297,25 @@ restarts. Point `PUBLIC_BASE_URL` at the host's HTTPS address.
 | What happened on the call | Result |
 | --- | --- |
 | Said yes, in any language | ✅ done |
+| Answered and spoke, transcript unusable | ✅ done — see below |
 | Pressed `1` | ✅ done — the keypad never needs the model |
 | "After lunch" / "in ten minutes" | ⏳ calls back then (up to `max_snoozes` times) |
 | "No, I don't want it" | 🔴 alerts you immediately — no pointless retry |
 | Someone else answered | ❌ missed — retries |
-| Nothing said, or nothing understood | ❌ missed — retries |
+| **Said nothing at all** | ❌ missed — retries |
 | Rang out / declined / busy / voicemail | ❌ missed — retries, never talks to voicemail |
 | Twilio refused to place the call | ❌ missed — retries |
+
+**Why an unusable transcript still counts.** Speech recognition on an elderly
+voice in a regional language is not reliable, and a recipient who cannot work a
+keypad mid-call has no second channel. If every garbled transcript raised an
+alert, you would get one on doses they took and confirmed out loud — and within a
+week you would stop reading the alerts, including the real ones. So answering the
+phone *and speaking* is treated as having heard the reminder. Silence is still a
+miss, and a clearly heard refusal still escalates immediately.
+
+Set `call.unclear_speech_counts_as: missed` if you would rather have the false
+alarms than the false confirmations.
 
 Every transition is idempotent: a webhook Twilio delivers twice, a status callback
 that races the reply, or a restart mid-call can never produce a duplicate call or a

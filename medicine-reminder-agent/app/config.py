@@ -65,6 +65,14 @@ class CallSettings:
     # the reminder falls back to the normal retry-then-escalate ladder.
     max_snoozes: int = 1
     speech_timeout: str = "auto"  # Twilio end-of-speech detection
+    # What to do when they clearly spoke but the recogniser produced nothing
+    # usable. "confirmed" trusts that answering and replying means they heard
+    # the reminder; "missed" demands a clean transcript and retries otherwise.
+    # Default is confirmed: for a recipient who cannot work a keypad, speech is
+    # the only channel there is, and treating every garbled transcript as a
+    # miss produces an alert on doses they actually took — which trains you to
+    # ignore the alerts that matter.
+    unclear_speech_counts_as: str = "confirmed"
 
 
 
@@ -291,6 +299,14 @@ def _load_call_settings(raw: dict[str, Any]) -> CallSettings:
     if len(digit) != 1 or digit not in "0123456789*#":
         raise ConfigError("call.confirm_digit must be a single key (0-9, * or #)")
 
+    unclear = str(
+        raw.get("unclear_speech_counts_as") or defaults.unclear_speech_counts_as
+    ).lower()
+    if unclear not in {"confirmed", "missed"}:
+        raise ConfigError(
+            "call.unclear_speech_counts_as must be 'confirmed' or 'missed'"
+        )
+
     max_attempts = int(raw.get("max_attempts", defaults.max_attempts))
     if max_attempts < 1:
         raise ConfigError("call.max_attempts must be at least 1")
@@ -313,6 +329,7 @@ def _load_call_settings(raw: dict[str, Any]) -> CallSettings:
         stale_call_seconds=int(raw.get("stale_call_seconds", defaults.stale_call_seconds)),
         max_snoozes=max(0, int(raw.get("max_snoozes", defaults.max_snoozes))),
         speech_timeout=str(raw.get("speech_timeout") or defaults.speech_timeout),
+        unclear_speech_counts_as=unclear,
     )
 
 

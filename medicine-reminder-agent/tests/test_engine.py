@@ -348,12 +348,46 @@ async def test_a_refusal_escalates_immediately(harness):
 
 
 @pytest.mark.asyncio
-async def test_an_unclear_reply_is_treated_as_a_miss(harness):
-    engine, store, provider, _ = harness(config=SPEECH)
+async def test_speaking_counts_even_when_the_transcript_is_unusable(harness):
+    """The default: they answered and spoke, so the dose is not chased again.
+
+    Someone who cannot work a keypad has speech as their only channel. Demanding
+    a clean transcript from an elderly speaker would raise an alert on doses
+    they took and confirmed out loud, which is how alerts get ignored.
+    """
+    engine, store, provider, notifier = harness(config=SPEECH)
     now = utcnow()
 
     run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
     await engine.record_reply(run_id, 1, reading(intent="unclear"), now=now)
+
+    assert store.get_run(run_id).status is RunStatus.ACKNOWLEDGED
+    await engine.tick(now + timedelta(seconds=600))
+    assert len(provider.placed) == 1
+    assert notifier.messages == []
+
+
+@pytest.mark.asyncio
+async def test_unclear_can_be_made_strict(harness):
+    engine, store, _, _ = harness(config=make_config(
+        call=CallSettings(confirmation_mode="speech", unclear_speech_counts_as="missed")
+    ))
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_reply(run_id, 1, reading(intent="unclear"), now=now)
+
+    assert store.get_run(run_id).status is RunStatus.WAITING_RETRY
+
+
+@pytest.mark.asyncio
+async def test_silence_still_counts_as_a_miss(harness):
+    """Nothing heard at all never reaches record_reply — it is a plain miss."""
+    engine, store, _, _ = harness(config=SPEECH)
+    now = utcnow()
+
+    run_id = await engine.trigger_schedule(engine.config.schedule("morning"), now=now)
+    await engine.record_outcome(run_id, 1, CallOutcome.ANSWERED_HUMAN, now=now)
 
     assert store.get_run(run_id).status is RunStatus.WAITING_RETRY
 

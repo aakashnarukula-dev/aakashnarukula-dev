@@ -13,8 +13,13 @@ call:
   # answered -> simply picking up counts (works with no public URL)
   confirmation_mode: speech
   confirm_digit: "1"
-  gather_timeout_seconds: 8  # how long to wait for a reply after the message
+  gather_timeout_seconds: 12 # be patient: elderly speakers start slowly
   speech_timeout: auto       # Twilio end-of-speech detection
+  # They answered and spoke, but the recogniser returned nothing usable.
+  # "confirmed" trusts the reply; "missed" demands a clean transcript.
+  # Keep it confirmed for anyone who cannot press a key — speech is their only
+  # channel, and chasing every garbled transcript trains you to ignore alerts.
+  unclear_speech_counts_as: confirmed
   max_snoozes: 1             # honour "call me back in 20 minutes" this many times
   stale_call_seconds: 180    # if no webhook resolves a call by then, poll the provider
 
@@ -44,14 +49,18 @@ recipients:
     phone: ${MOM_PHONE}        # E.164, e.g. +919876543210
     language: te-IN
     # Amazon Polly has no Telugu voice — only Hindi and Indian English. Telugu
-    # comes from Google's voices instead. Standard is cheapest; swap in
-    # Google.te-IN-Chirp3-HD-Kore for a noticeably more natural read.
-    voice: Google.te-IN-Standard-Female
+    # comes from Google's voices instead. Chirp3-HD reads far more naturally
+    # than Standard; if she has to work to understand the voice, nothing else
+    # about this system matters. Google.te-IN-Standard-Female is the cheap one.
+    voice: Google.te-IN-Chirp3-HD-Kore
     # Everything the call says besides the reminder. The voice pronounces
     # whatever text it is handed, so leaving these in English would have a
     # Telugu voice reading English aloud.
     phrases:
-      confirm_prompt: "మీరు మాత్ర వేసుకున్నారా? చెప్పండి, లేదా {digit} నొక్కండి."
+      # No "press 1" — she cannot work the keypad mid-call, and telling her to
+      # only adds a step she will fail. The keypad still works if she ever taps
+      # it; we just do not ask.
+      confirm_prompt: "మీరు మాత్ర వేసుకున్నారా? నాతో చెప్పండి."
       thanks: "ధన్యవాదాలు. జాగ్రత్తగా ఉండండి."
       no_reply: "సమాధానం రాలేదు. కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
       snooze_ack: "సరే, కొద్దిసేపటి తర్వాత మళ్ళీ ఫోన్ చేస్తాను."
