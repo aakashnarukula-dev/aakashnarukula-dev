@@ -27,6 +27,10 @@ def _setup_logging(verbose: bool) -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
+    # The Twilio SDK logs full request/response headers at INFO, which buries
+    # anything useful. Raise it unless the user explicitly asked for -v.
+    if not verbose:
+        logging.getLogger("twilio.http_client").setLevel(logging.WARNING)
 
 
 def cmd_check(args: argparse.Namespace) -> int:
