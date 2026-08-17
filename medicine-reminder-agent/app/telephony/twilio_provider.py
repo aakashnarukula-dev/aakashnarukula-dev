@@ -25,7 +25,9 @@ class TwilioProvider:
     def __init__(self, settings: ProviderSettings, call_settings: CallSettings) -> None:
         self._settings = settings
         self._call = call_settings
-        self._client = Client(settings.account_sid, settings.auth_token)
+        username, password = settings.api_credentials
+        # With an API key the account SID still selects which account to act on.
+        self._client = Client(username, password, settings.account_sid)
 
     def _callback_url(self, path: str, request: CallRequest) -> str:
         query = urlencode(

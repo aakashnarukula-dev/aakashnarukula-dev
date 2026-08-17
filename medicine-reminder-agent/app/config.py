@@ -130,7 +130,20 @@ class TelegramSettings:
 class ProviderSettings:
     name: str = "twilio"
     account_sid: str = ""
+    # The master credential. Needed for webhook signature validation — Twilio
+    # signs X-Twilio-Signature with it and an API key cannot verify that.
     auth_token: str = ""
+    # Optional scoped credential, preferred for placing calls because it can be
+    # revoked on its own without rotating the account's master token.
+    api_key_sid: str = ""
+    api_key_secret: str = ""
+
+    @property
+    def api_credentials(self) -> tuple[str, str]:
+        """Username/password for Twilio's REST API."""
+        if self.api_key_sid and self.api_key_secret:
+            return self.api_key_sid, self.api_key_secret
+        return self.account_sid, self.auth_token
     from_number: str = ""
     public_base_url: str = ""
     validate_signatures: bool = True
@@ -431,6 +444,8 @@ def load_config(path: str | Path | None = None) -> Config:
         name=os.environ.get("CALL_PROVIDER", "twilio").strip().lower(),
         account_sid=os.environ.get("TWILIO_ACCOUNT_SID", "").strip(),
         auth_token=os.environ.get("TWILIO_AUTH_TOKEN", "").strip(),
+        api_key_sid=os.environ.get("TWILIO_API_KEY_SID", "").strip(),
+        api_key_secret=os.environ.get("TWILIO_API_KEY_SECRET", "").strip(),
         from_number=os.environ.get("TWILIO_FROM_NUMBER", "").strip(),
         public_base_url=os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/"),
         validate_signatures=_as_bool(os.environ.get("VALIDATE_WEBHOOK_SIGNATURES"), True),
@@ -439,11 +454,14 @@ def load_config(path: str | Path | None = None) -> Config:
     if provider.name not in {"twilio", "console"}:
         raise ConfigError(f"unsupported CALL_PROVIDER '{provider.name}'")
     if provider.name == "twilio":
+        has_secret = provider.auth_token or (
+            provider.api_key_sid and provider.api_key_secret
+        )
         missing = [
             name
             for name, value in (
                 ("TWILIO_ACCOUNT_SID", provider.account_sid),
-                ("TWILIO_AUTH_TOKEN", provider.auth_token),
+                ("TWILIO_AUTH_TOKEN or TWILIO_API_KEY_SID/SECRET", has_secret),
                 ("TWILIO_FROM_NUMBER", provider.from_number),
             )
             if not value

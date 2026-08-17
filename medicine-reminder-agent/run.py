@@ -114,6 +114,26 @@ async def _call_now(args: argparse.Namespace) -> int:
         services.store.close()
 
 
+async def _preflight(args: argparse.Namespace) -> int:
+    from app.preflight import FAIL, run_checks
+
+    config = load_config(args.config)
+    checks = await run_checks(config)
+    width = max(len(c.name) for c in checks)
+    for check in checks:
+        print(f"  {check.mark}  {check.name.ljust(width)}  {check.detail}")
+
+    failures = [c for c in checks if c.status == FAIL]
+    print()
+    if failures:
+        print(f"{len(failures)} blocking problem(s) — fix these before calling anyone.")
+        return 1
+    print("Ready. Place a test call with:")
+    print(f"  python run.py -c {args.config or 'config.yaml'} call-now "
+          f"{config.schedules[0].id}")
+    return 0
+
+
 async def _test_telegram(args: argparse.Namespace) -> int:
     from app.notifier import TelegramNotifier
 
@@ -151,6 +171,11 @@ def main(argv: list[str] | None = None) -> int:
     call_now.add_argument("--wait", type=int, default=420,
                           help="seconds to follow the run for (default 420)")
     call_now.set_defaults(func=lambda a: asyncio.run(_call_now(a)))
+
+    preflight = sub.add_parser(
+        "preflight", help="check credentials, number, voice, model and alerts"
+    )
+    preflight.set_defaults(func=lambda a: asyncio.run(_preflight(a)))
 
     telegram = sub.add_parser("test-telegram", help="send a test Telegram alert")
     telegram.set_defaults(func=lambda a: asyncio.run(_test_telegram(a)))
