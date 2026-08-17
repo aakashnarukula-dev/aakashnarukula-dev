@@ -55,13 +55,14 @@ five to fifteen cents:
 | DeepSeek V4 Flash | $0.14 | $0.28 | ~$0.0001 | ~$0.22 |
 | Grok 4.1 Fast | $0.20 | $0.50 | ~$0.0001 | ~$0.24 |
 | Claude Haiku 4.5 | $1.00 | $5.00 | ~$0.0008 | ~$1.64 |
-| — the phone calls themselves — | | | ~$0.05–0.15 | **~$110–330** |
+| — the phone calls themselves — | | | ~$0.0075 | **~$30** |
 
 ¹ Two people × three doses a day, every day.
 
-**So the entire spread between the cheapest and the priciest option here is about
-$1.50 a year — under 1% of the phone bill.** Optimising the token price is the
-wrong game. What actually matters on a live call is:
+Telephony is ~$16/year of calls plus ~$14/year of number rental, at India's
+$0.0075/min. **So the entire spread between the cheapest and the priciest model is
+about $1.50 a year — around 5% of an already-small phone bill, and under 1% of it
+for every option except Claude.** Optimising the token price is the wrong game. What actually matters on a live call is:
 
 1. **Latency.** Someone is holding a phone waiting for an answer. Flash-Lite is
    built for exactly this and is near the top of the speed rankings.
@@ -151,11 +152,21 @@ CALL_PROVIDER=console CONSOLE_OUTCOME=no_answer python run.py call-now morning
 3. On a trial account you can only call **verified** numbers — verify each recipient
    under *Phone Numbers → Verified Caller IDs* first.
 
-> **Calling Indian numbers:** Indian regulation restricts outbound automated voice.
-> Twilio requires a [regulatory bundle / DLT registration](https://www.twilio.com/en-us/guidelines/in/regulatory)
-> before it will deliver calls to `+91` numbers, and personal (non-business) use is
-> often refused. If that blocks you, the same agent works with an Indian CPaaS —
-> Exotel, Plivo, Knowlarity or MyOperator. See [Using another provider](#using-another-telephony-provider).
+> **Calling Indian numbers:** buy a **US number**, not an Indian one. Twilio cannot
+> place outbound calls *from* `+91` numbers at all — per its
+> [India voice guidelines](https://www.twilio.com/en-us/guidelines/in/voice), "outbound
+> calls to India can only be made from international (non-Indian) numbers". Calling
+> *to* India from a US number is fine, needs no regulatory bundle or DLT registration,
+> and the rental is cheaper. Pick a plain **US local** number ($1.15/month) — it is the
+> cheapest voice-capable option, and the per-minute rate is set by the destination, so
+> calling India costs the same from it as from anywhere else. Any area code will do.
+> Twilio does require recipient consent for *commercial* calls; reminding your own
+> family to take medicine is not commercial.
+>
+> **Save the number in their contacts.** Caller ID is the same US number on every
+> call, so have them store it under a name they recognise. An unknown foreign number
+> often goes unanswered — which is the one failure this whole system cannot retry
+> its way out of.
 
 ### 2. A public URL (so the reply can reach the app)
 
