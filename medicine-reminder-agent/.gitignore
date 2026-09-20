@@ -6,4 +6,6 @@ venv/
 config.yaml
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 .pytest_cache/
